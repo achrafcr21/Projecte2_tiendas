@@ -1,33 +1,41 @@
 from rest_framework import serializers
-from django.contrib.auth.hashers import make_password
-from .models import Usuario
+from .models import Usuario, Tienda, Producto, Pedido
 
 class UsuarioSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
-    password2 = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
-
+    password = serializers.CharField(write_only=True)
+    
     class Meta:
         model = Usuario
-        fields = ['id', 'username', 'email', 'password', 'password2', 'rol']
+        fields = ('id', 'email', 'username', 'password', 'rol', 'fecha_registro')
+        read_only_fields = ('fecha_registro',)
         extra_kwargs = {
-            'email': {'required': True},
-            'username': {'required': True},
+            'rol': {'write_only': True}
         }
 
-    def validate(self, data):
-        if data['password'] != data['password2']:
-            raise serializers.ValidationError("Las contraseñas no coinciden")
-        return data
-
     def create(self, validated_data):
-        validated_data.pop('password2')  # Remove password2 from data
-        password = validated_data.pop('password')  # Remove password to handle it separately
-        
-        # Crear usuario usando create_user
-        user = Usuario.objects.create_user(
-            email=validated_data.pop('email'),
-            username=validated_data.pop('username'),
-            password=password,
-            **validated_data
-        )
+        password = validated_data.pop('password')
+        user = Usuario(**validated_data)
+        user.set_password(password)
+        user.save()
         return user
+
+    def update(self, instance, validated_data):
+        if 'rol' in validated_data and instance.rol != validated_data['rol']:
+            raise serializers.ValidationError("El rol no puede ser modificado después del registro")
+        return super().update(instance, validated_data)
+
+class TiendaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tienda
+        fields = ('id', 'nombre', 'descripcion', 'fecha_registro', 'propietario')
+        read_only_fields = ('fecha_registro',)
+
+class ProductoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Producto
+        fields = ('id', 'nombre', 'descripcion', 'precio')
+
+class PedidoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Pedido
+        fields = ('id', 'usuario', 'total_precio', 'status')
