@@ -6,6 +6,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
 from .serializers import UsuarioSerializer, TiendaSerializer, ProductoSerializer, PedidoSerializer
 from .models import Usuario, Tienda
+from .permissions import IsAdminUser
 
 # Create your views here.
 
@@ -45,9 +46,25 @@ def login_view(request):
     )
 
 class TiendaListCreateView(generics.ListCreateAPIView):
+    """
+    Vista per llistar totes les tiendas i crear-ne de noves.
+    GET: Qualsevol usuari autenticat pot veure les tiendas
+    POST: Només els usuaris admin poden crear tiendas
+    """
     queryset = Tienda.objects.all()
     serializer_class = TiendaSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def perform_create(self, serializer):
+        # Guardem la tienda amb l'usuari admin com a propietari
         serializer.save(propietario=self.request.user)
+
+class TiendaDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Vista per gestionar una tienda específica.
+    GET: Qualsevol usuari autenticat pot veure els detalls
+    PUT/DELETE: Només el propietari (admin) pot modificar o eliminar
+    """
+    queryset = Tienda.objects.all()
+    serializer_class = TiendaSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]

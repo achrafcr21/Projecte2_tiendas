@@ -28,7 +28,11 @@ class TiendaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tienda
         fields = ('id', 'nombre', 'descripcion', 'fecha_registro', 'propietario')
-        read_only_fields = ('fecha_registro',)
+        read_only_fields = ('fecha_registro', 'propietario')  # El propietario se asigna automáticamente
+
+    def create(self, validated_data):
+        # El propietario se asigna en la vista, no se debe proporcionar en el payload
+        return super().create(validated_data)
 
 class ProductoSerializer(serializers.ModelSerializer):
     class Meta:
