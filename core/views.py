@@ -1,12 +1,14 @@
 from django.shortcuts import render
-from rest_framework import status, generics
+from rest_framework import status, generics, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
-from .serializers import UsuarioSerializer, TiendaSerializer, ProductoSerializer, PedidoSerializer
-from .models import Usuario, Tienda
-from .permissions import IsAdminUser
+from .serializers import UsuarioSerializer, TiendaSerializer, ProductoSerializer, PedidoSerializer, SolicitudSerializer, ServicioSerializer, TiendaServicioSerializer
+from .models import Usuario, Tienda, Solicitud, Servicio, TiendaServicio
+from .permissions import IsAdminUser, IsAdmin
+from rest_framework.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404
 
 # Create your views here.
 
@@ -68,3 +70,111 @@ class TiendaDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Tienda.objects.all()
     serializer_class = TiendaSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
+
+class SolicitudCreateView(generics.CreateAPIView):
+    """
+    Vista per crear noves sol·licituds de digitalització.
+    No requereix autenticació ja que és per clients potencials.
+    """
+    queryset = Solicitud.objects.all()
+    serializer_class = SolicitudSerializer
+    permission_classes = [AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            self.perform_create(serializer)
+            return Response({
+                "missatge": "Sol·licitud enviada correctament. Et contactarem aviat.",
+                "id": serializer.instance.id
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class SolicitudListView(generics.ListAPIView):
+    """
+    Vista per llistar sol·licituds.
+    Només accessible per admins.
+    """
+    queryset = Solicitud.objects.all()
+    serializer_class = SolicitudSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+class SolicitudDetailView(generics.RetrieveUpdateAPIView):
+    """
+    Vista per veure i actualitzar una sol·licitud específica.
+    Només accessible per admins.
+    """
+    queryset = Solicitud.objects.all()
+    serializer_class = SolicitudSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        
+        # Validar el estado si se está actualizando
+        if 'estado' in request.data and request.data['estado'] not in dict(Solicitud.ESTADO_CHOICES):
+            return Response({
+                'error': f'Estado inválido. Opciones válidas: {", ".join(dict(Solicitud.ESTADO_CHOICES).keys())}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        
+        if serializer.is_valid():
+            self.perform_update(serializer)
+            return Response({
+                "mensaje": "Solicitud actualizada correctamente",
+                "solicitud": serializer.data
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ServicioListView(generics.ListCreateAPIView):
+    """
+    Vista per llistar i crear serveis.
+    GET: Tothom pot veure els serveis actius
+    POST: Només els admins poden crear serveis
+    """
+    queryset = Servicio.objects.all()
+    serializer_class = ServicioSerializer
+    
+    def get_queryset(self):
+        # Si no és admin, només mostrem serveis actius
+        if not self.request.user or self.request.user.rol != 'admin':
+            return self.queryset.filter(activo=True)
+        return self.queryset
+    
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAdmin()]
+        return []
+
+class TiendaServicioViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pels serveis d'una botiga.
+    Permet gestionar els serveis assignats a una botiga específica.
+    """
+    serializer_class = TiendaServicioSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        tienda_id = self.kwargs['tienda_id']
+        tienda = get_object_or_404(Tienda, id=tienda_id)
+        
+        # Verificar permisos
+        if self.request.user.rol != 'admin' and tienda.propietario != self.request.user:
+            raise PermissionDenied(
+                "No tens permís per veure els serveis d'aquesta botiga"
+            )
+            
+        return TiendaServicio.objects.filter(tienda=tienda)
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        tienda_id = self.kwargs['tienda_id']
+        context['tienda'] = get_object_or_404(Tienda, id=tienda_id)
+        return context
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAdmin()]
+        return [IsAuthenticated()]

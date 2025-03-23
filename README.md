@@ -15,14 +15,15 @@ Estem creant:
 Hem creat totes les taules necessàries a MySQL:
 - Usuaris (per guardar admins i clients)
 - Botigues
+- Sol·licituds de digitalització
 - Productes
 - Comandes
 - etc...
 
 ### 2. Sistema d'Usuaris 👤
 Tenim dos tipus d'usuaris:
-- **Administradors**: Poden crear i gestionar botigues
-- **Clients**: Poden comprar productes i fer comandes
+- **Administradors**: Gestionen sol·licituds i botigues
+- **Clients**: Poden sol·licitar digitalització i gestionar la seva botiga
 
 #### Com funciona el registre i login?
 1. **Registre** (`/api/registro/`):
@@ -34,7 +35,58 @@ Tenim dos tipus d'usuaris:
    - Poses el teu email i contrasenya
    - Si són correctes, pots començar a fer servir l'API
 
-### 3. Sistema de Botigues 🏪
+[Espai per captura de pantalla del login exitós]
+
+### 3. Sistema de Sol·licituds 📝
+Hem implementat un sistema complet per gestionar sol·licituds de digitalització:
+
+#### Com funciona?
+1. Un comerciant envia una sol·licitud (no cal estar registrat)
+2. Els admins reben la sol·licitud i la revisen
+3. Poden acceptar-la o rebutjar-la
+4. Si s'accepta, es crea un compte pel comerciant
+
+#### Endpoints de Sol·licituds:
+
+1. **Crear Sol·licitud** (`POST /api/solicitudes/crear/`):
+   - No requereix autenticació
+   - Qualsevol pot sol·licitar digitalització
+   ```json
+   {
+       "nombre_negocio": "La Meva Botiga",
+       "descripcion": "Vull vendre online",
+       "email_contacto": "botiga@exemple.com",
+       "telefono": "123456789"
+   }
+   ```
+   [Espai per captura de pantalla de sol·licitud creada]
+
+2. **Llistar Sol·licituds** (`GET /api/solicitudes/`):
+   - Només accessible per admins
+   - Mostra totes les sol·licituds ordenades per data
+   - Inclou l'estat de cada sol·licitud
+
+   [Espai per captura de pantalla del llistat]
+
+3. **Veure Sol·licitud** (`GET /api/solicitudes/{id}/`):
+   - Només accessible per admins
+   - Mostra tots els detalls d'una sol·licitud
+   - Inclou notes internes si n'hi ha
+
+   [Espai per captura de pantalla dels detalls]
+
+4. **Actualitzar Sol·licitud** (`PUT /api/solicitudes/{id}/`):
+   - Només accessible per admins
+   - Permet canviar l'estat i afegir notes
+   ```json
+   {
+       "estado": "aceptada",  // o "rechazada"
+       "notas_admin": "Client interessant"
+   }
+   ```
+   [Espai per captura de pantalla d'actualització]
+
+### 4. Sistema de Botigues 🏪
 Hem creat els endpoints per gestionar botigues:
 
 #### Endpoints de Botigues:
@@ -79,22 +131,51 @@ POST /api/login/
 }
 ```
 
-### 3. Si ets admin, pots crear una botiga:
+### 3. Si ets admin, revisa les sol·licituds:
 ```json
-POST /api/tiendas/
+GET /api/solicitudes/
+```
+
+### 4. Processa una sol·licitud:
+```json
+PUT /api/solicitudes/1/
 {
-    "nombre": "La Meva Botiga",
-    "descripcion": "Una botiga molt xula"
+    "estado": "aceptada",
+    "notas_admin": "Bon candidat per digitalitzar"
 }
 ```
 
 ## 🚧 Què falta per fer?
-1. Implementar el sistema de productes
-2. Fer el sistema de comandes
-3. Afegir el carret de la compra
+1. Implementar el sistema de serveis
+2. Implementar sistema de pagaments
+3. Implementar sistema de suport
 4. Més coses que anirem veient! 😊
 
 ## 💡 Consells
 - Fes servir Postman per provar els endpoints
 - Guarda't els endpoints que més facis servir
 - Si tens dubtes, pregunta! 🙋‍♂️
+
+## 📚 Detalls Tècnics
+### Model de Sol·licitud
+```python
+class Solicitud(models.Model):
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('aceptada', 'Aceptada'),
+        ('rechazada', 'Rechazada')
+    ]
+    
+    nombre_negocio = models.CharField(max_length=200)
+    descripcion = models.TextField()
+    email_contacto = models.EmailField()
+    telefono = models.CharField(max_length=20)
+    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    estado = models.CharField(choices=ESTADO_CHOICES, default='pendiente')
+    notas_admin = models.TextField(blank=True, null=True)
+```
+
+### Sistema de Permisos
+- Les sol·licituds es poden crear sense autenticació
+- Només els admins poden veure i gestionar sol·licituds
+- Implementat amb permisos personalitzats de Django Rest Framework

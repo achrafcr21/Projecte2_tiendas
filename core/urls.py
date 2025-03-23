@@ -1,11 +1,30 @@
-from django.urls import path
-from .views import RegistroUsuarioView, login_view, TiendaListCreateView, TiendaDetailView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from . import views
 
 app_name = 'core'
 
+# Crear router per les vistes basades en ViewSet
+router = DefaultRouter()
+router.register(r'tiendas/(?P<tienda_id>\d+)/servicios', views.TiendaServicioViewSet, basename='tienda-servicios')
+
 urlpatterns = [
-    path('api/registro/', RegistroUsuarioView.as_view(), name='registro'),
-    path('api/login/', login_view, name='login'),
-    path('api/tiendas/', TiendaListCreateView.as_view(), name='tiendas'),
-    path('api/tiendas/<int:pk>/', TiendaDetailView.as_view(), name='tienda-detail'),
+    # Autenticación
+    path('api/registro/', views.RegistroUsuarioView.as_view(), name='registro'),
+    path('api/login/', views.login_view, name='login'),
+    
+    # Tiendas (solo lectura para clientes)
+    path('api/tiendas/', views.TiendaListCreateView.as_view(), name='tienda-list'),
+    path('api/tiendas/<int:pk>/', views.TiendaDetailView.as_view(), name='tienda-detail'),
+    
+    # Solicitudes de digitalización
+    path('api/solicitudes/', views.SolicitudListView.as_view(), name='solicitud-list'),
+    path('api/solicitudes/crear/', views.SolicitudCreateView.as_view(), name='solicitud-create'),
+    path('api/solicitudes/<int:pk>/', views.SolicitudDetailView.as_view(), name='solicitud-detail'),
+    
+    # Noves URLs de serveis
+    path('api/servicios/', views.ServicioListView.as_view(), name='servicio-list'),
+    
+    # Incloure les URLs del router
+    path('api/', include(router.urls)),
 ]

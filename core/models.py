@@ -44,19 +44,92 @@ class Tienda(models.Model):
         db_table = 'tiendas'
 
 class Servicio(models.Model):
-    nombre = models.CharField(max_length=200)
-    precio = models.DecimalField(max_digits=10, decimal_places=2)
-
+    """
+    Model pels serveis que oferim als clients.
+    Per exemple: web, app, marketing digital, etc.
+    """
+    nombre = models.CharField(max_length=200, verbose_name='Nom')
+    descripcion = models.TextField(
+        verbose_name='Descripció',
+        blank=True,  # Permitir campo vacío en formularios
+        null=True    # Permitir NULL en la base de datos
+    )
+    precio = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        verbose_name='Preu base'
+    )
+    activo = models.BooleanField(default=True, verbose_name='Actiu')
+    
     class Meta:
         db_table = 'servicios'
+        verbose_name = 'Servei'
+        verbose_name_plural = 'Serveis'
+
+    def __str__(self):
+        return self.nombre
 
 class TiendaServicio(models.Model):
-    tienda = models.ForeignKey(Tienda, on_delete=models.CASCADE)
-    servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
-    estado = models.CharField(max_length=50)
+    """
+    Model per la relació entre botigues i serveis.
+    Guarda l'estat del servei per cada botiga.
+    """
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendent d\'iniciar'),
+        ('en_proceso', 'En procés'),
+        ('completado', 'Completat'),
+        ('pausado', 'Pausat')
+    ]
+    
+    tienda = models.ForeignKey(
+        Tienda, 
+        on_delete=models.CASCADE,
+        related_name='servicios',
+        verbose_name='Botiga'
+    )
+    servicio = models.ForeignKey(
+        Servicio, 
+        on_delete=models.CASCADE,
+        verbose_name='Servei'
+    )
+    estado = models.CharField(
+        max_length=50, 
+        choices=ESTADO_CHOICES,
+        default='pendiente',
+        verbose_name='Estat'
+    )
+    fecha_contratacion = models.DateTimeField(
+        default=timezone.now,
+        verbose_name='Data de contractació'
+    )
+    notas = models.TextField(
+        blank=True, 
+        null=True,
+        verbose_name='Notes de progrés'
+    )
+    precio_final = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        verbose_name='Preu final',
+        help_text='Pot variar del preu base segons personalitzacions',
+        null=True,  # Permitir NULL temporalmente para la migración
+        blank=True  # Permitir campo vacío en formularios
+    )
 
     class Meta:
         db_table = 'tiendas_servicios'
+        verbose_name = 'Servei contractat'
+        verbose_name_plural = 'Serveis contractats'
+        unique_together = ['tienda', 'servicio']  # Una botiga no pot tenir el mateix servei dues vegades
+
+    def __str__(self):
+        return f"{self.tienda.nombre} - {self.servicio.nombre} ({self.get_estado_display()})"
+
+    def save(self, *args, **kwargs):
+        # Si no hay precio final, usar el precio base del servicio
+        if not self.precio_final and self.servicio:
+            self.precio_final = self.servicio.precio
+        super().save(*args, **kwargs)
 
 class Proyecto(models.Model):
     tienda = models.ForeignKey(Tienda, on_delete=models.CASCADE)
@@ -121,3 +194,40 @@ class Soporte(models.Model):
 
     class Meta:
         db_table = 'soporte'
+
+class Solicitud(models.Model):
+    """
+    Model per gestionar les sol·licituds de digitalització de botigues.
+    Els clients potencials envien sol·licituds i els admins les gestionen.
+    """
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('aceptada', 'Aceptada'),
+        ('rechazada', 'Rechazada')
+    ]
+    
+    nombre_negocio = models.CharField(max_length=200, verbose_name='Nom del negoci')
+    descripcion = models.TextField(verbose_name='Descripció del negoci')
+    email_contacto = models.EmailField(verbose_name='Email de contacte')
+    telefono = models.CharField(max_length=20, verbose_name='Telèfon')
+    fecha_solicitud = models.DateTimeField(default=timezone.now, verbose_name='Data de sol·licitud')
+    estado = models.CharField(
+        max_length=20, 
+        choices=ESTADO_CHOICES, 
+        default='pendiente',
+        verbose_name='Estat'
+    )
+    notas_admin = models.TextField(
+        blank=True, 
+        null=True,
+        verbose_name='Notes del admin'
+    )
+    
+    class Meta:
+        db_table = 'solicitudes'
+        ordering = ['-fecha_solicitud']  # Les més recents primer
+        verbose_name = 'Sol·licitud'
+        verbose_name_plural = 'Sol·licituds'
+
+    def __str__(self):
+        return f"{self.nombre_negocio} - {self.get_estado_display()}"
