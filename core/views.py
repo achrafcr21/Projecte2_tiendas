@@ -134,14 +134,13 @@ class ServicioListView(generics.ListCreateAPIView):
     GET: Tothom pot veure els serveis actius
     POST: Només els admins poden crear serveis
     """
-    queryset = Servicio.objects.all()
     serializer_class = ServicioSerializer
     
     def get_queryset(self):
         # Si no és admin, només mostrem serveis actius
         if not self.request.user or self.request.user.rol != 'admin':
-            return self.queryset.filter(activo=True)
-        return self.queryset
+            return Servicio.objects.filter(activo=True)
+        return Servicio.objects.all()
     
     def get_permissions(self):
         if self.request.method == 'POST':
