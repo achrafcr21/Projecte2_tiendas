@@ -7,6 +7,8 @@ app_name = 'core'
 # Crear router per les vistes basades en ViewSet
 router = DefaultRouter()
 router.register(r'tiendas/(?P<tienda_id>\d+)/servicios', views.TiendaServicioViewSet, basename='tienda-servicios')
+router.register(r'pagos', views.PagoViewSet, basename='pagos')
+router.register(r'soporte', views.SoporteViewSet, basename='soporte')
 
 urlpatterns = [
     # Autenticación

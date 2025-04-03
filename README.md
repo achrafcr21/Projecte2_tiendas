@@ -110,6 +110,69 @@ Hem creat els endpoints per gestionar botigues:
 5. **Eliminar botiga** (`DELETE /api/tiendas/{id}/`):
    - Només el propietari pot eliminar la seva botiga
 
+### 5. Sistema de Serveis 📈
+Hem creat els endpoints per gestionar serveis:
+
+#### Endpoints de Serveis:
+
+1. **Llistar Serveis** (`GET /api/servicios/`):
+   - Tothom pot veure els serveis actius
+   - Els admins veuen tots els serveis
+   ```json
+   [
+     {
+       "nombre": "Web Bàsica",
+       "descripcion": "Web responsive amb 5 seccions",
+       "precio": 599.99
+     }
+   ]
+   ```
+
+2. **Contractar Servei** (`POST /api/tiendas/{id}/servicios/`):
+   - Cal estar autenticat com a propietari de la botiga
+   ```json
+   {
+     "servicio_id": 1,
+     "notas": "Vull afegir una secció de blog"
+   }
+   ```
+
+### 6. Sistema de Pagaments 💸
+Hem creat els endpoints per gestionar pagaments:
+
+#### Endpoints de Pagaments:
+
+1. **Crear Pagament** (`POST /api/pagos/`):
+   ```json
+   {
+     "tienda_servicio": 1,
+     "metodo_pago": "tarjeta",
+     "monto": 599.99
+   }
+   ```
+
+### 7. Sistema de Suport 🤝
+He afegit un sistema de tickets per si els clients necessiten ajuda:
+
+#### Endpoints de Suport:
+
+1. **Crear Ticket** (`POST /api/soporte/`):
+   ```json
+   {
+     "asunto": "Dubte sobre la web",
+     "mensaje": "Quan estarà llesta?"
+   }
+   ```
+
+2. **Respondre Ticket** (`PATCH /api/soporte/{id}/`):
+   - Només admins poden respondre
+   ```json
+   {
+     "estado": "resuelto",
+     "respuesta": "En unes 2 setmanes estarà llesta"
+   }
+   ```
+
 ## 📝 Com provar els endpoints?
 
 ### 1. Primer, registra't:
@@ -146,10 +209,8 @@ PUT /api/solicitudes/1/
 ```
 
 ## 🚧 Què falta per fer?
-1. Implementar el sistema de serveis
-2. Implementar sistema de pagaments
-3. Implementar sistema de suport
-4. Més coses que anirem veient! 😊
+1. Implementar el frontend
+2. Més coses que anirem veient! 😊
 
 ## 💡 Consells
 - Fes servir Postman per provar els endpoints

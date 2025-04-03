@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Usuario, Tienda, Producto, Pedido, Solicitud, Servicio, TiendaServicio
+from .models import Usuario, Tienda, Producto, Pedido, Solicitud, Servicio, TiendaServicio, Pago, Soporte
 
 class UsuarioSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -162,3 +162,45 @@ class TiendaServicioSerializer(serializers.ModelSerializer):
         # Assignar la botiga del context
         validated_data['tienda'] = self.context['tienda']
         return super().create(validated_data)
+
+class PagoSerializer(serializers.ModelSerializer):
+    """
+    Serialitzador pels pagaments
+    """
+    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+
+    class Meta:
+        model = Pago
+        fields = [
+            'id',
+            'tienda_servicio',
+            'metodo_pago',
+            'monto',
+            'estado',
+            'estado_display',
+            'fecha_pago'
+        ]
+        read_only_fields = ['id', 'fecha_pago']
+
+class SoporteSerializer(serializers.ModelSerializer):
+    """
+    Serialitzador pels tickets de suport
+    """
+    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+    usuario_email = serializers.EmailField(source='usuario.email', read_only=True)
+
+    class Meta:
+        model = Soporte
+        fields = [
+            'id',
+            'usuario',
+            'usuario_email',
+            'asunto',
+            'mensaje',
+            'estado',
+            'estado_display',
+            'respuesta',
+            'fecha_creacion',
+            'fecha_actualizacion'
+        ]
+        read_only_fields = ['usuario', 'fecha_creacion', 'fecha_actualizacion']

@@ -140,13 +140,35 @@ class Proyecto(models.Model):
         db_table = 'proyectos'
 
 class Pago(models.Model):
-    tienda = models.ForeignKey(Tienda, on_delete=models.CASCADE)
-    metodo_pago = models.CharField(max_length=100)
+    """
+    Model per gestionar els pagaments dels serveis
+    """
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendent'),
+        ('completado', 'Completat'),
+        ('cancelado', 'Cancel·lat')
+    ]
+    
+    tienda_servicio = models.ForeignKey(
+        TiendaServicio,
+        on_delete=models.CASCADE,
+        related_name='pagos',
+        null=True  # Permitimos null temporalmente para la migración
+    )
+    metodo_pago = models.CharField(max_length=50)
     monto = models.DecimalField(max_digits=10, decimal_places=2)
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default='pendiente'
+    )
     fecha_pago = models.DateTimeField(default=timezone.now)
 
     class Meta:
         db_table = 'pagos'
+
+    def __str__(self):
+        return f"Pago {self.id} - {self.tienda_servicio}"
 
 class Producto(models.Model):
     nombre = models.CharField(max_length=200)
@@ -188,12 +210,33 @@ class DetallePedido(models.Model):
         db_table = 'detalle_pedidos'
 
 class Soporte(models.Model):
+    """
+    Model pels tickets de suport dels clients
+    """
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendent'),
+        ('en_proceso', 'En procés'),
+        ('resuelto', 'Resolt')
+    ]
+    
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    asunto = models.CharField(max_length=200)
     mensaje = models.TextField()
-    fecha_envio = models.DateTimeField(default=timezone.now)
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default='pendiente'
+    )
+    respuesta = models.TextField(blank=True, null=True)
+    fecha_creacion = models.DateTimeField(default=timezone.now)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'soporte'
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f"Ticket {self.id} - {self.usuario.username} - {self.asunto}"
 
 class Solicitud(models.Model):
     """

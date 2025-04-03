@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
-from .serializers import UsuarioSerializer, TiendaSerializer, ProductoSerializer, PedidoSerializer, SolicitudSerializer, ServicioSerializer, TiendaServicioSerializer
-from .models import Usuario, Tienda, Solicitud, Servicio, TiendaServicio
+from .serializers import UsuarioSerializer, TiendaSerializer, ProductoSerializer, PedidoSerializer, SolicitudSerializer, ServicioSerializer, TiendaServicioSerializer, PagoSerializer, SoporteSerializer
+from .models import Usuario, Tienda, Solicitud, Servicio, TiendaServicio, Pago, Soporte
 from .permissions import IsAdminUser, IsAdmin
 from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
@@ -175,5 +175,42 @@ class TiendaServicioViewSet(viewsets.ModelViewSet):
     
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAdmin()]
+        return [IsAuthenticated()]
+
+class PagoViewSet(viewsets.ModelViewSet):
+    """
+    Vista pels pagaments
+    """
+    serializer_class = PagoSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Si es admin, veu tots els pagaments
+        if self.request.user.rol == 'admin':
+            return Pago.objects.all()
+        # Si no, només veu els pagaments de les seves botigues
+        return Pago.objects.filter(tienda_servicio__tienda__propietario=self.request.user)
+
+class SoporteViewSet(viewsets.ModelViewSet):
+    """
+    Vista pels tickets de suport.
+    GET: Admin veu tots, usuari només els seus
+    POST: Usuaris poden crear tickets
+    PUT/PATCH: Admin pot actualizar estat i resposta
+    """
+    serializer_class = SoporteSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.rol == 'admin':
+            return Soporte.objects.all()
+        return Soporte.objects.filter(usuario=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(usuario=self.request.user)
+
+    def get_permissions(self):
+        if self.action in ['update', 'partial_update']:
             return [IsAdmin()]
         return [IsAuthenticated()]
