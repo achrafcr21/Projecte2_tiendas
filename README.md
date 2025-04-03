@@ -173,6 +173,27 @@ He afegit un sistema de tickets per si els clients necessiten ajuda:
    }
    ```
 
+## 🚀 Instruccions pel desplegament
+
+Per adaptar el backend al servidor de producció:
+
+1. Crear arxiu `.env` basant-vos en `.env.example`:
+   - Configurar les credencials de la vostra base de dades
+   - Afegir el vostre domini a ALLOWED_HOSTS
+   - Configurar CORS_ALLOWED_ORIGINS amb el domini del frontend
+
+2. Instal·lar dependències:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Aplicar migracions:
+   ```bash
+   python manage.py migrate
+   ```
+
+La resta de configuracions específiques del servidor (nginx, gunicorn, etc.) les podeu fer segons els vostres estàndards.
+
 ## 📝 Com provar els endpoints?
 
 ### 1. Primer, registra't:
