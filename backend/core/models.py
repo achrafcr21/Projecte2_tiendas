@@ -174,6 +174,9 @@ class Producto(models.Model):
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField()
     precio = models.DecimalField(max_digits=10, decimal_places=2)
+    stock = models.IntegerField(default=0)
+    categoria = models.CharField(max_length=100, null=True, blank=True)
+    tienda = models.ForeignKey(Tienda, on_delete=models.CASCADE, related_name='productos', null=True)
 
     class Meta:
         db_table = 'productos'
@@ -193,9 +196,17 @@ class DetalleCarrito(models.Model):
         db_table = 'detalle_carrito'
 
 class Pedido(models.Model):
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('enviado', 'Enviado'),
+        ('entregado', 'Entregado'),
+        ('cancelado', 'Cancelado')
+    ]
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    tienda = models.ForeignKey(Tienda, on_delete=models.CASCADE, null=True)
     total_precio = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=50)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
+    fecha_creacion = models.DateTimeField(default=timezone.now)
 
     class Meta:
         db_table = 'pedidos'
