@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from . import views_dam  # Importar vistas de DAM
 
 app_name = 'core'
 
@@ -29,4 +30,7 @@ urlpatterns = [
     
     # Incloure les URLs del router
     path('api/', include(router.urls)),
+    
+    # URLs de la APP MÓVIL (DAM)
+    path('api/app/', include('core.urls_dam')),
 ]
