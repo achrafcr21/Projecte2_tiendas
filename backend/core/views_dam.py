@@ -1,12 +1,158 @@
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Count, Sum, F
-from .models import Producto, Pedido, DetallePedido, CarritoCompra, DetalleCarrito
+from .models import Producto, Pedido, DetallePedido, CarritoCompra, DetalleCarrito, Tienda
 from django.shortcuts import get_object_or_404
 
 # Endpoints de Productos (APP MÓVIL - DAM)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def listar_productos(request):
+    """Endpoint de la APP MÓVIL (DAM): Lista todos los productos disponibles"""
+    # Obtener parámetros de filtrado
+    tienda_id = request.query_params.get('tienda', None)
+    categoria = request.query_params.get('categoria', None)
+    
+    # Consulta base
+    productos = Producto.objects.all()
+    
+    # Aplicar filtros si existen
+    if tienda_id:
+        productos = productos.filter(tienda_id=tienda_id)
+    if categoria:
+        productos = productos.filter(categoria=categoria)
+    
+    # Devolver lista de productos
+    return Response([{
+        'id': p.id,
+        'nombre': p.nombre,
+        'descripcion': p.descripcion,
+        'precio': float(p.precio),
+        'stock': p.stock,
+        'categoria': p.categoria,
+        'tienda_id': p.tienda_id
+    } for p in productos])
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def producto_detalle(request, producto_id):
+    """
+    Endpoint de la APP MÓVIL (DAM): 
+    GET: Obtiene los detalles de un producto específico
+    PUT: Modifica un producto existente (solo propietario de la tienda)
+    DELETE: Elimina un producto (solo propietario de la tienda)
+    """
+    try:
+        producto = Producto.objects.get(id=producto_id)
+        
+        # Para PUT y DELETE, verificar que el usuario es propietario de la tienda
+        if request.method in ['PUT', 'DELETE']:
+            if not producto.tienda or producto.tienda.propietario != request.user:
+                return Response(
+                    {'error': 'No tienes permiso para modificar este producto'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        
+        if request.method == 'GET':
+            return Response({
+                'id': producto.id,
+                'nombre': producto.nombre,
+                'descripcion': producto.descripcion,
+                'precio': float(producto.precio),
+                'stock': producto.stock,
+                'categoria': producto.categoria,
+                'tienda_id': producto.tienda_id
+            })
+            
+        elif request.method == 'PUT':
+            # Actualizar campos permitidos
+            producto.nombre = request.data.get('nombre', producto.nombre)
+            producto.descripcion = request.data.get('descripcion', producto.descripcion)
+            producto.precio = request.data.get('precio', producto.precio)
+            producto.stock = request.data.get('stock', producto.stock)
+            producto.categoria = request.data.get('categoria', producto.categoria)
+            producto.save()
+            
+            return Response({
+                'mensaje': 'Producto actualizado correctamente',
+                'id': producto.id,
+                'nombre': producto.nombre,
+                'descripcion': producto.descripcion,
+                'precio': float(producto.precio),
+                'stock': producto.stock,
+                'categoria': producto.categoria,
+                'tienda_id': producto.tienda_id
+            })
+            
+        elif request.method == 'DELETE':
+            producto.delete()
+            return Response(
+                {'mensaje': 'Producto eliminado correctamente'},
+                status=status.HTTP_204_NO_CONTENT
+            )
+            
+    except Producto.DoesNotExist:
+        return Response(
+            {'error': 'Producto no encontrado'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def crear_producto(request):
+    """
+    Endpoint de la APP MÓVIL (DAM): Crea un nuevo producto
+    Solo el propietario de una tienda puede crear productos para su tienda
+    """
+    tienda_id = request.data.get('tienda_id')
+    if not tienda_id:
+        return Response(
+            {'error': 'Se requiere especificar una tienda'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Verificar que el usuario es propietario de la tienda
+    tienda = get_object_or_404(Tienda, id=tienda_id)
+    if tienda.propietario != request.user:
+        return Response(
+            {'error': 'No tienes permiso para crear productos en esta tienda'}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    try:
+        producto = Producto.objects.create(
+            nombre=request.data['nombre'],
+            descripcion=request.data.get('descripcion', ''),
+            precio=request.data['precio'],
+            stock=request.data.get('stock', 0),
+            categoria=request.data.get('categoria'),
+            tienda=tienda
+        )
+        
+        return Response({
+            'mensaje': 'Producto creado correctamente',
+            'id': producto.id,
+            'nombre': producto.nombre,
+            'descripcion': producto.descripcion,
+            'precio': float(producto.precio),
+            'stock': producto.stock,
+            'categoria': producto.categoria,
+            'tienda_id': producto.tienda_id
+        }, status=status.HTTP_201_CREATED)
+        
+    except KeyError as e:
+        return Response(
+            {'error': f'Falta el campo requerido: {str(e)}'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        return Response(
+            {'error': str(e)}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
