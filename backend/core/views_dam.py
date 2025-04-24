@@ -235,6 +235,105 @@ def actualizar_estado_pedido(request, pedido_id, estado):
         'mensaje': 'Estado actualizado correctamente'
     })
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def detalle_pedido(request, pedido_id):
+    """Endpoint de la APP MÓVIL (DAM): Obtiene los detalles completos de un pedido"""
+    try:
+        pedido = Pedido.objects.get(id=pedido_id)
+        
+        # Solo el propietario de la tienda o el usuario que hizo el pedido pueden verlo
+        if pedido.usuario != request.user and (not pedido.tienda or pedido.tienda.propietario != request.user):
+            return Response(
+                {'error': 'No tienes permiso para ver este pedido'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Obtener los detalles del pedido
+        detalles = DetallePedido.objects.filter(pedido=pedido)
+        
+        return Response({
+            'id': pedido.id,
+            'usuario': {
+                'id': pedido.usuario.id,
+                'email': pedido.usuario.email
+            },
+            'tienda': {
+                'id': pedido.tienda.id,
+                'nombre': pedido.tienda.nombre
+            } if pedido.tienda else None,
+            'total_precio': float(pedido.total_precio),
+            'estado': pedido.estado,
+            'fecha_creacion': pedido.fecha_creacion,
+            'detalles': [{
+                'producto': {
+                    'id': detalle.producto.id,
+                    'nombre': detalle.producto.nombre,
+                    'precio': float(detalle.precio)
+                },
+                'cantidad': detalle.cantidad,
+                'subtotal': float(detalle.precio * detalle.cantidad)
+            } for detalle in detalles]
+        })
+        
+    except Pedido.DoesNotExist:
+        return Response(
+            {'error': 'Pedido no encontrado'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ultimos_cinco_pedidos(request):
+    """Endpoint de la APP MÓVIL (DAM): Obtiene los últimos 5 pedidos de la tienda del usuario"""
+    # Verificar que el usuario tiene una tienda
+    tienda = Tienda.objects.filter(propietario=request.user).first()
+    if not tienda:
+        return Response(
+            {'error': 'No tienes una tienda asociada'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Obtener los últimos 5 pedidos
+    pedidos = Pedido.objects.filter(tienda=tienda).order_by('-fecha_creacion')[:5]
+    
+    return Response([{
+        'id': pedido.id,
+        'usuario': {
+            'id': pedido.usuario.id,
+            'email': pedido.usuario.email
+        },
+        'total_precio': float(pedido.total_precio),
+        'estado': pedido.estado,
+        'fecha_creacion': pedido.fecha_creacion
+    } for pedido in pedidos])
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def todos_los_pedidos(request):
+    """Endpoint de la APP MÓVIL (DAM): Obtiene todos los pedidos de la tienda del usuario"""
+    # Verificar que el usuario tiene una tienda
+    tienda = Tienda.objects.filter(propietario=request.user).first()
+    if not tienda:
+        return Response(
+            {'error': 'No tienes una tienda asociada'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Obtener todos los pedidos
+    pedidos = Pedido.objects.filter(tienda=tienda).order_by('-fecha_creacion')
+    
+    return Response([{
+        'id': pedido.id,
+        'usuario': {
+            'id': pedido.usuario.id,
+            'email': pedido.usuario.email
+        },
+        'total_precio': float(pedido.total_precio),
+        'estado': pedido.estado,
+        'fecha_creacion': pedido.fecha_creacion
+    } for pedido in pedidos])
+
 # Endpoints de Carrito (APP MÓVIL - DAM)
 
 @api_view(['POST'])

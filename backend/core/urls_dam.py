@@ -11,6 +11,9 @@ urlpatterns = [
     path('producto-mas-vendido/', views_dam.producto_mas_vendido, name='dam-producto-mas-vendido'),
     
     # Endpoints de pedidos
+    path('pedidos/', views_dam.todos_los_pedidos, name='dam-pedidos-todos'),
+    path('pedidos/ultimos/', views_dam.ultimos_cinco_pedidos, name='dam-pedidos-ultimos'),
+    path('pedidos/<int:pedido_id>/', views_dam.detalle_pedido, name='dam-pedido-detalle'),
     path('usuario/<int:usuario_id>/pedidos/', views_dam.pedidos_usuario, name='dam-pedidos-usuario'),
     path('pedidos/estado/<str:estado>/', views_dam.pedidos_por_estado, name='dam-pedidos-estado'),
     path('pedidos/<int:pedido_id>/estado/<str:estado>/', views_dam.actualizar_estado_pedido, name='dam-actualizar-estado-pedido'),
