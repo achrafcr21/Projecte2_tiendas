@@ -7,3 +7,5 @@ PyJWT==2.8.0
 django-filter==23.5
 Pillow==10.2.0  # Para manejo de imágenes
 gunicorn==21.2.0  # Para servidor en producción
+cryptography==42.0.5  # Para funciones de seguridad
+django-rest-knox==4.2.0  # Para manejo de tokens

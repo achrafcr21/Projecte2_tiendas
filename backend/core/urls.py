@@ -1,11 +1,9 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import views
-from . import views_dam  # Importar vistas de DAM
+from . import views, views_dam
 
 app_name = 'core'
 
-# Crear router per les vistes basades en ViewSet
 router = DefaultRouter()
 router.register(r'tiendas/(?P<tienda_id>\d+)/servicios', views.TiendaServicioViewSet, basename='tienda-servicios')
 router.register(r'pagos', views.PagoViewSet, basename='pagos')
@@ -27,6 +25,10 @@ urlpatterns = [
     
     # Noves URLs de serveis
     path('api/servicios/', views.ServicioListView.as_view(), name='servicio-list'),
+    
+    # Nuevos endpoints para usuarios
+    path('api/usuarios/', views.UsuarioListView.as_view(), name='usuario-list'),
+    path('api/usuarios/<int:pk>/', views.UsuarioDetailView.as_view(), name='usuario-detail'),
     
     # Incloure les URLs del router
     path('api/', include(router.urls)),

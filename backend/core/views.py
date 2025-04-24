@@ -214,3 +214,29 @@ class SoporteViewSet(viewsets.ModelViewSet):
         if self.action in ['update', 'partial_update']:
             return [IsAdmin()]
         return [IsAuthenticated()]
+
+class UsuarioListView(generics.ListAPIView):
+    """
+    Vista para listar usuarios.
+    Solo accesible para admins.
+    """
+    queryset = Usuario.objects.all()
+    serializer_class = UsuarioSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+class UsuarioDetailView(generics.RetrieveAPIView):
+    """
+    Vista para obtener detalles de un usuario específico.
+    Admins pueden ver cualquier usuario.
+    Usuarios normales solo pueden ver su propio perfil.
+    """
+    queryset = Usuario.objects.all()
+    serializer_class = UsuarioSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        obj = get_object_or_404(self.get_queryset(), pk=self.kwargs["pk"])
+        # Solo permitir ver otros perfiles si es admin
+        if self.request.user.rol != 'admin' and obj != self.request.user:
+            raise PermissionDenied("No tienes permiso para ver este perfil")
+        return obj
