@@ -1,38 +1,48 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import { useForm } from 'react-hook-form';
-import { login } from '../services/api';
-import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Mail, Lock, Loader } from 'lucide-react';
 
-const Login = () => {
-  const { register, handleSubmit, formState: { errors } } = useForm();
-  const [error, setError] = useState('');
+export default function Login() {
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
   const navigate = useNavigate();
 
   const onSubmit = async (data) => {
     try {
-      const response = await login(data);
-      localStorage.setItem('token', response.token);
+      // TODO: Implementar la lógica de login con el backend
+      console.log('Login data:', data);
+      // Simular delay para mostrar el loading state
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Redirigir al dashboard después del login
       navigate('/dashboard');
-    } catch (err) {
-      setError('Email o contraseña incorrectos');
+    } catch (error) {
+      console.error('Error en login:', error);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Iniciar Sesión
-        </h2>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-primary-light to-primary-dark flex items-center justify-center p-4">
+      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-2xl">
+        {/* Header */}
+        <div className="text-center">
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">
+            Bienvenido de nuevo
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            ¿No tienes cuenta?{' '}
+            <a href="/registro" className="font-medium text-primary hover:text-primary-dark transition-colors">
+              Regístrate
+            </a>
+          </p>
+        </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+        {/* Form */}
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <div className="space-y-4">
+            {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
+                Correo electrónico
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -41,21 +51,23 @@ const Login = () => {
                 <input
                   id="email"
                   type="email"
-                  {...register('email', { 
-                    required: 'El email es requerido',
+                  {...register('email', {
+                    required: 'El correo es requerido',
                     pattern: {
                       value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Email inválido'
+                      message: 'Correo inválido'
                     }
                   })}
-                  className="pl-10 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
+                  placeholder="tu@email.com"
                 />
               </div>
               {errors.email && (
-                <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>
+                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
               )}
             </div>
 
+            {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Contraseña
@@ -67,63 +79,58 @@ const Login = () => {
                 <input
                   id="password"
                   type="password"
-                  {...register('password', { required: 'La contraseña es requerida' })}
-                  className="pl-10 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+                  {...register('password', {
+                    required: 'La contraseña es requerida',
+                    minLength: {
+                      value: 6,
+                      message: 'La contraseña debe tener al menos 6 caracteres'
+                    }
+                  })}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
+                  placeholder="••••••••"
                 />
               </div>
               {errors.password && (
-                <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>
+                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
               )}
             </div>
+          </div>
 
-            {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <AlertCircle className="h-5 w-5 text-red-400" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <button
-                type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-              >
-                Iniciar Sesión
-              </button>
-            </div>
-          </form>
-
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  ¿No tienes cuenta?
-                </span>
-              </div>
+          {/* Remember me & Forgot password */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <input
+                id="remember_me"
+                type="checkbox"
+                {...register('remember')}
+                className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+              />
+              <label htmlFor="remember_me" className="ml-2 block text-sm text-gray-900">
+                Recordarme
+              </label>
             </div>
 
-            <div className="mt-6">
-              <button
-                onClick={() => navigate('/solicitud')}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary bg-primary-50 hover:bg-primary-100"
-              >
-                Solicitar Digitalización
-              </button>
+            <div className="text-sm">
+              <a href="/recuperar-password" className="font-medium text-primary hover:text-primary-dark transition-colors">
+                ¿Olvidaste tu contraseña?
+              </a>
             </div>
           </div>
-        </div>
+
+          {/* Submit button */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? (
+              <Loader className="animate-spin h-5 w-5" />
+            ) : (
+              'Iniciar sesión'
+            )}
+          </button>
+        </form>
       </div>
     </div>
   );
-};
-
-export default Login;
+}
