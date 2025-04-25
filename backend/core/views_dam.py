@@ -382,3 +382,186 @@ def borrar_del_carrito(request, usuario_id, producto_id):
     return Response({
         'mensaje': 'Producto eliminado del carrito'
     })
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ver_carrito(request, usuario_id):
+    """
+    Endpoint de la APP MÓVIL (DAM): Obtiene el contenido del carrito de un usuario
+    """
+    try:
+        # Verificar que el usuario autenticado es el dueño del carrito
+        if request.user.id != usuario_id:
+            return Response(
+                {'error': 'No tienes permiso para ver este carrito'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        # Obtener o crear el carrito del usuario
+        carrito, created = CarritoCompra.objects.get_or_create(usuario_id=usuario_id)
+        
+        # Obtener los detalles del carrito
+        detalles = DetalleCarrito.objects.filter(carrito=carrito).select_related('producto')
+        
+        # Calcular el total
+        total = sum(detalle.producto.precio * detalle.cantidad for detalle in detalles)
+        
+        return Response({
+            'id': carrito.id,
+            'productos': [{
+                'id': detalle.producto.id,
+                'nombre': detalle.producto.nombre,
+                'precio': float(detalle.producto.precio),
+                'cantidad': detalle.cantidad,
+                'subtotal': float(detalle.producto.precio * detalle.cantidad)
+            } for detalle in detalles],
+            'total': float(total)
+        })
+        
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def actualizar_cantidad_carrito(request, usuario_id, producto_id):
+    """
+    Endpoint de la APP MÓVIL (DAM): Actualiza la cantidad de un producto en el carrito
+    """
+    try:
+        # Verificar que el usuario autenticado es el dueño del carrito
+        if request.user.id != usuario_id:
+            return Response(
+                {'error': 'No tienes permiso para modificar este carrito'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        cantidad = request.data.get('cantidad', 0)
+        if cantidad < 0:
+            return Response(
+                {'error': 'La cantidad debe ser mayor o igual a 0'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        carrito = CarritoCompra.objects.get(usuario_id=usuario_id)
+        detalle = DetalleCarrito.objects.get(carrito=carrito, producto_id=producto_id)
+        
+        if cantidad == 0:
+            detalle.delete()
+            mensaje = 'Producto eliminado del carrito'
+        else:
+            detalle.cantidad = cantidad
+            detalle.save()
+            mensaje = 'Cantidad actualizada correctamente'
+            
+        return Response({'mensaje': mensaje})
+        
+    except CarritoCompra.DoesNotExist:
+        return Response(
+            {'error': 'Carrito no encontrado'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except DetalleCarrito.DoesNotExist:
+        return Response(
+            {'error': 'Producto no encontrado en el carrito'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def vaciar_carrito(request, usuario_id):
+    """
+    Endpoint de la APP MÓVIL (DAM): Elimina todos los productos del carrito
+    """
+    try:
+        # Verificar que el usuario autenticado es el dueño del carrito
+        if request.user.id != usuario_id:
+            return Response(
+                {'error': 'No tienes permiso para vaciar este carrito'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        carrito = CarritoCompra.objects.get(usuario_id=usuario_id)
+        DetalleCarrito.objects.filter(carrito=carrito).delete()
+        
+        return Response({'mensaje': 'Carrito vaciado correctamente'})
+        
+    except CarritoCompra.DoesNotExist:
+        return Response(
+            {'error': 'Carrito no encontrado'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def crear_pedido_desde_carrito(request, usuario_id):
+    """
+    Endpoint de la APP MÓVIL (DAM): Convierte el carrito actual en un pedido
+    """
+    try:
+        # Verificar que el usuario autenticado es el dueño del carrito
+        if request.user.id != usuario_id:
+            return Response(
+                {'error': 'No tienes permiso para crear un pedido con este carrito'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        carrito = CarritoCompra.objects.get(usuario_id=usuario_id)
+        detalles = DetalleCarrito.objects.filter(carrito=carrito).select_related('producto')
+        
+        if not detalles.exists():
+            return Response(
+                {'error': 'El carrito está vacío'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        # Calcular el total del pedido
+        total = sum(detalle.producto.precio * detalle.cantidad for detalle in detalles)
+        
+        # Crear el pedido
+        pedido = Pedido.objects.create(
+            usuario_id=usuario_id,
+            total_precio=total,
+            estado='pendiente'
+        )
+        
+        # Crear los detalles del pedido
+        for detalle in detalles:
+            DetallePedido.objects.create(
+                pedido=pedido,
+                producto=detalle.producto,
+                cantidad=detalle.cantidad,
+                precio=detalle.producto.precio
+            )
+            
+        # Vaciar el carrito
+        detalles.delete()
+        
+        return Response({
+            'mensaje': 'Pedido creado correctamente',
+            'pedido_id': pedido.id,
+            'total': float(total)
+        }, status=status.HTTP_201_CREATED)
+        
+    except CarritoCompra.DoesNotExist:
+        return Response(
+            {'error': 'Carrito no encontrado'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )

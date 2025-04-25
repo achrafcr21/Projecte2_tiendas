@@ -30,6 +30,12 @@ urlpatterns = [
     path('api/usuarios/', views.UsuarioListView.as_view(), name='usuario-list'),
     path('api/usuarios/<int:pk>/', views.UsuarioDetailView.as_view(), name='usuario-detail'),
     
+    # Endpoints de carrito (APP MÓVIL - DAM)
+    path('carrito/<int:usuario_id>/', views_dam.ver_carrito, name='ver_carrito'),
+    path('carrito/actualizar/<int:usuario_id>/<int:producto_id>/', views_dam.actualizar_cantidad_carrito, name='actualizar_cantidad_carrito'),
+    path('carrito/vaciar/<int:usuario_id>/', views_dam.vaciar_carrito, name='vaciar_carrito'),
+    path('carrito/crear-pedido/<int:usuario_id>/', views_dam.crear_pedido_desde_carrito, name='crear_pedido_desde_carrito'),
+    
     # Incloure les URLs del router
     path('api/', include(router.urls)),
     
