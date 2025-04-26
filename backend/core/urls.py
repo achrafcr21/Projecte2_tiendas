@@ -31,10 +31,16 @@ urlpatterns = [
     path('api/usuarios/<int:pk>/', views.UsuarioDetailView.as_view(), name='usuario-detail'),
     
     # Endpoints de carrito (APP MÓVIL - DAM)
-    path('carrito/<int:usuario_id>/', views_dam.ver_carrito, name='ver_carrito'),
-    path('carrito/actualizar/<int:usuario_id>/<int:producto_id>/', views_dam.actualizar_cantidad_carrito, name='actualizar_cantidad_carrito'),
-    path('carrito/vaciar/<int:usuario_id>/', views_dam.vaciar_carrito, name='vaciar_carrito'),
-    path('carrito/crear-pedido/<int:usuario_id>/', views_dam.crear_pedido_desde_carrito, name='crear_pedido_desde_carrito'),
+    path('api/carrito/<int:usuario_id>/', views_dam.ver_carrito, name='ver_carrito'),
+    path('api/carrito/actualizar/<int:usuario_id>/<int:producto_id>/', views_dam.actualizar_cantidad_carrito, name='actualizar_cantidad_carrito'),
+    path('api/carrito/vaciar/<int:usuario_id>/', views_dam.vaciar_carrito, name='vaciar_carrito'),
+    path('api/carrito/crear-pedido/<int:usuario_id>/', views_dam.crear_pedido_desde_carrito, name='crear_pedido_desde_carrito'),
+    path('api/carrito/añadir/<int:usuario_id>/<int:tienda_id>/', views_dam.añadir_al_carrito, name='añadir_al_carrito'),
+    path('api/carrito/borrar/<int:usuario_id>/<int:producto_id>/', views_dam.borrar_del_carrito, name='borrar_del_carrito'),
+    
+    # Endpoints de pedidos (APP MÓVIL - DAM)
+    path('api/pedidos/', views_dam.listar_pedidos, name='listar_pedidos'),
+    path('api/pedidos/<int:pedido_id>/', views_dam.ver_pedido, name='ver_pedido'),
     
     # Incloure les URLs del router
     path('api/', include(router.urls)),

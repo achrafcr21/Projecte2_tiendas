@@ -194,38 +194,182 @@ Per adaptar el backend al servidor de producció:
 
 La resta de configuracions específiques del servidor (nginx, gunicorn, etc.) les podeu fer segons els vostres estàndards.
 
-## 📝 Com provar els endpoints?
+## 📝 Guía de Pruebas de la API
 
-### 1. Primer, registra't:
-```json
+### 🔑 Autenticación
+
+1. **Registro de Usuario**:
+```http
 POST /api/registro/
+Content-Type: application/json
+
 {
-    "email": "el_teu_email@exemple.com",
-    "password": "la_teva_contrasenya",
-    "rol": "admin"  // o "cliente" si vols ser client
+    "email": "cliente@example.com",
+    "password": "contraseña123",
+    "nombre": "Cliente",
+    "apellidos": "Ejemplo",
+    "telefono": "123456789",
+    "rol": "cliente"
 }
 ```
 
-### 2. Fes login:
-```json
+2. **Inicio de Sesión**:
+```http
 POST /api/login/
+Content-Type: application/json
+
 {
-    "email": "el_teu_email@exemple.com",
-    "password": "la_teva_contrasenya"
+    "email": "cliente@example.com",
+    "password": "contraseña123"
+}
+```
+Respuesta:
+```json
+{
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+        "id": 7,
+        "email": "cliente@example.com",
+        "nombre": "Cliente",
+        "rol": "cliente"
+    }
 }
 ```
 
-### 3. Si ets admin, revisa les sol·licituds:
-```json
-GET /api/solicitudes/
+### 🛒 Gestión del Carrito
+
+1. **Ver Carrito**:
+```http
+GET /api/carrito/{usuario_id}/
+Authorization: Bearer {token}
 ```
 
-### 4. Processa una sol·licitud:
-```json
-PUT /api/solicitudes/1/
+2. **Añadir Producto al Carrito**:
+```http
+POST /api/carrito/añadir/{usuario_id}/{tienda_id}/
+Authorization: Bearer {token}
+Content-Type: application/json
+
 {
-    "estado": "aceptada",
-    "notas_admin": "Bon candidat per digitalitzar"
+    "producto_id": 1,
+    "cantidad": 2
+}
+```
+
+3. **Actualizar Cantidad de Producto**:
+```http
+PUT /api/carrito/actualizar/{usuario_id}/{producto_id}/
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+    "cantidad": 3
+}
+```
+
+4. **Borrar Producto del Carrito**:
+```http
+DELETE /api/carrito/borrar/{usuario_id}/{producto_id}/
+Authorization: Bearer {token}
+```
+
+5. **Vaciar Carrito**:
+```http
+DELETE /api/carrito/vaciar/{usuario_id}/
+Authorization: Bearer {token}
+```
+
+6. **Crear Pedido desde Carrito**:
+```http
+POST /api/carrito/crear-pedido/{usuario_id}/
+Authorization: Bearer {token}
+```
+
+### 📦 Gestión de Pedidos
+
+1. **Listar Pedidos del Usuario**:
+```http
+GET /api/pedidos/
+Authorization: Bearer {token}
+```
+
+2. **Ver Detalle de un Pedido**:
+```http
+GET /api/pedidos/{pedido_id}/
+Authorization: Bearer {token}
+```
+
+### 🔄 Flujo Completo de Compra
+
+1. **Inicio**: Primero, registra un usuario o inicia sesión para obtener el token JWT.
+
+2. **Explorar Productos**: 
+   - Puedes ver todos los productos: `GET /api/productos/`
+   - Filtrar por tienda: `GET /api/productos/?tienda={tienda_id}`
+   - Filtrar por categoría: `GET /api/productos/?categoria={categoria}`
+
+3. **Proceso de Compra**:
+   1. Añade productos al carrito usando el endpoint `añadir`
+   2. Verifica el carrito con el endpoint `ver carrito`
+   3. Ajusta cantidades si es necesario con `actualizar`
+   4. Cuando estés listo, convierte el carrito en pedido con `crear-pedido`
+
+4. **Seguimiento**:
+   - Consulta tus pedidos con el endpoint `listar pedidos`
+   - Ve los detalles de cada pedido con `ver pedido`
+
+### 📌 Notas Importantes
+
+1. **Autenticación**:
+   - Todos los endpoints (excepto registro y login) requieren el token JWT
+   - El token debe incluirse en el header `Authorization: Bearer {token}`
+   - El token expira después de 24 horas
+
+2. **Permisos**:
+   - Solo puedes acceder a tu propio carrito y pedidos
+   - El ID de usuario en la URL debe coincidir con tu usuario autenticado
+
+3. **Errores Comunes**:
+   - 401: Token no válido o expirado
+   - 403: No tienes permiso para acceder al recurso
+   - 404: Recurso no encontrado
+   - 400: Error en los datos enviados
+
+### 🚀 Ejemplos de Respuestas
+
+1. **Ver Carrito**:
+```json
+{
+    "id": 1,
+    "productos": [
+        {
+            "id": 1,
+            "nombre": "Producto de prueba",
+            "precio": 19.99,
+            "cantidad": 2,
+            "subtotal": 39.98
+        }
+    ],
+    "total": 39.98
+}
+```
+
+2. **Ver Pedido**:
+```json
+{
+    "id": 1,
+    "fecha": "2025-04-26T14:21:48.930238Z",
+    "estado": "pendiente",
+    "productos": [
+        {
+            "id": 1,
+            "nombre": "Producto de prueba",
+            "precio": 19.99,
+            "cantidad": 3,
+            "subtotal": 59.97
+        }
+    ],
+    "total": 59.97
 }
 ```
 

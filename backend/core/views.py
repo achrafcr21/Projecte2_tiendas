@@ -41,7 +41,16 @@ def login_view(request):
 
     user = authenticate(request, username=email, password=password)
     if user:
-        return Response({'mensaje': 'Login exitoso'}, status=status.HTTP_200_OK)
+        from rest_framework_simplejwt.tokens import RefreshToken
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'mensaje': 'Login exitoso',
+            'token': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user_id': user.id,
+            'email': user.email,
+            'rol': user.rol
+        })
     return Response(
         {'error': 'Credenciales inválidas'},
         status=status.HTTP_401_UNAUTHORIZED

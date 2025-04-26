@@ -1,7 +1,7 @@
+from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from rest_framework import status
 from django.db.models import Count, Sum, F
 from .models import Producto, Pedido, DetallePedido, CarritoCompra, DetalleCarrito, Tienda
 from django.shortcuts import get_object_or_404
@@ -333,6 +333,68 @@ def todos_los_pedidos(request):
         'estado': pedido.estado,
         'fecha_creacion': pedido.fecha_creacion
     } for pedido in pedidos])
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ver_pedido(request, pedido_id):
+    """
+    Endpoint de la APP MÓVIL (DAM): Ver detalles de un pedido específico
+    """
+    try:
+        # Obtener el pedido y verificar que pertenece al usuario
+        pedido = get_object_or_404(Pedido, id=pedido_id)
+        
+        if pedido.usuario_id != request.user.id:
+            return Response(
+                {'error': 'No tienes permiso para ver este pedido'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        # Obtener los detalles del pedido
+        detalles = DetallePedido.objects.filter(pedido=pedido).select_related('producto')
+        
+        return Response({
+            'id': pedido.id,
+            'fecha': pedido.fecha_creacion,
+            'estado': pedido.estado,
+            'productos': [{
+                'id': detalle.producto.id,
+                'nombre': detalle.producto.nombre,
+                'precio': float(detalle.precio),
+                'cantidad': detalle.cantidad,
+                'subtotal': float(detalle.precio * detalle.cantidad)
+            } for detalle in detalles],
+            'total': float(pedido.total_precio)
+        })
+        
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def listar_pedidos(request):
+    """
+    Endpoint de la APP MÓVIL (DAM): Listar todos los pedidos del usuario
+    """
+    try:
+        # Obtener todos los pedidos del usuario
+        pedidos = Pedido.objects.filter(usuario=request.user).order_by('-fecha_creacion')
+        
+        return Response([{
+            'id': pedido.id,
+            'fecha': pedido.fecha_creacion,
+            'estado': pedido.estado,
+            'total': float(pedido.total_precio)
+        } for pedido in pedidos])
+        
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 # Endpoints de Carrito (APP MÓVIL - DAM)
 
