@@ -2,21 +2,22 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Loader } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/Toast';
 
 export default function Login() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
   const navigate = useNavigate();
+  const { login } = useAuth();
+  const { addToast } = useToast();
 
   const onSubmit = async (data) => {
     try {
-      // TODO: Implementar la lógica de login con el backend
-      console.log('Login data:', data);
-      // Simular delay para mostrar el loading state
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // Redirigir al dashboard después del login
+      await login(data);
+      addToast('Inicio de sesión exitoso', 'success');
       navigate('/dashboard');
     } catch (error) {
-      console.error('Error en login:', error);
+      addToast(error.message || 'Error en el inicio de sesión', 'error');
     }
   };
 

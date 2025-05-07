@@ -33,12 +33,12 @@ export const register = async (userData) => {
 };
 
 // Tiendas
-export const createStore = async (storeData) => {
+export const getStores = async () => {
   try {
-    const response = await api.post('/tiendas/', storeData);
+    const response = await api.get('/tiendas/');
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Error al crear la tienda');
+    throw new Error(error.response?.data?.message || 'Error al obtener las tiendas');
   }
 };
 
@@ -48,6 +48,76 @@ export const getStoreDetails = async (storeId) => {
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Error al obtener los detalles de la tienda');
+  }
+};
+
+export const createStore = async (storeData) => {
+  try {
+    const response = await api.post('/tiendas/', storeData);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al crear la tienda');
+  }
+};
+
+export const updateStore = async (storeId, storeData) => {
+  try {
+    const response = await api.put(`/tiendas/${storeId}/`, storeData);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al actualizar la tienda');
+  }
+};
+
+export const deleteStore = async (storeId) => {
+  try {
+    await api.delete(`/tiendas/${storeId}/`);
+    return true;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al eliminar la tienda');
+  }
+};
+
+// Servicios
+export const getServices = async () => {
+  try {
+    const response = await api.get('/servicios/');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al obtener los servicios');
+  }
+};
+
+export const getStoreServices = async (storeId) => {
+  try {
+    const response = await api.get(`/tiendas/${storeId}/servicios/`);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al obtener los servicios de la tienda');
+  }
+};
+
+export const contractService = async (storeId, serviceId, customPrice = null) => {
+  try {
+    const data = {
+      servicio_id: serviceId,
+      precio_final: customPrice
+    };
+    const response = await api.post(`/tiendas/${storeId}/servicios/`, data);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al contratar el servicio');
+  }
+};
+
+export const updateServiceStatus = async (storeId, serviceId, status) => {
+  try {
+    const response = await api.patch(`/tiendas/${storeId}/servicios/${serviceId}/`, {
+      estado: status
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al actualizar el estado del servicio');
   }
 };
 

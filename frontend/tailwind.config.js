@@ -7,9 +7,9 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#1E40AF', // azul oscuro
-          light: '#3B82F6',
-          dark: '#1E3A8A',
+          light: '#4F46E5', // Indigo-600
+          DEFAULT: '#4338CA', // Indigo-700
+          dark: '#3730A3', // Indigo-800
         },
         secondary: {
           DEFAULT: '#F3F4F6', // gris claro

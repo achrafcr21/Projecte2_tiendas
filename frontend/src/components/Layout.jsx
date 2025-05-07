@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Layout = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const isAuthenticated = localStorage.getItem('token');
+  const { isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -30,10 +37,7 @@ const Layout = ({ children }) => {
                     Dashboard
                   </Link>
                   <button
-                    onClick={() => {
-                      localStorage.removeItem('token');
-                      window.location.href = '/';
-                    }}
+                    onClick={handleLogout}
                     className="text-gray-700 hover:text-primary px-3 py-2 rounded-md text-sm font-medium"
                   >
                     Cerrar sesión
@@ -76,10 +80,7 @@ const Layout = ({ children }) => {
                     Dashboard
                   </Link>
                   <button
-                    onClick={() => {
-                      localStorage.removeItem('token');
-                      window.location.href = '/';
-                    }}
+                    onClick={handleLogout}
                     className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary"
                   >
                     Cerrar sesión
