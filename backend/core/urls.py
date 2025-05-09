@@ -29,6 +29,7 @@ urlpatterns = [
     # Nuevos endpoints para usuarios
     path('api/usuarios/', views.UsuarioListView.as_view(), name='usuario-list'),
     path('api/usuarios/<int:pk>/', views.UsuarioDetailView.as_view(), name='usuario-detail'),
+    path('api/usuarios/me/stats/', views.get_user_stats, name='user-stats'),
     
     # Endpoints de carrito (APP MÓVIL - DAM)
     path('api/carrito/<int:usuario_id>/', views_dam.ver_carrito, name='ver_carrito'),

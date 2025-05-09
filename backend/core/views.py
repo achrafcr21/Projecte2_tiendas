@@ -59,16 +59,31 @@ def login_view(request):
 class TiendaListCreateView(generics.ListCreateAPIView):
     """
     Vista per llistar totes les tiendas i crear-ne de noves.
-    GET: Qualsevol usuari autenticat pot veure les tiendas
+    GET: 
+    - Admins poden veure totes les tiendas
+    - Usuaris normals només poden veure les seves tiendas
     POST: Només els usuaris admin poden crear tiendas
     """
-    queryset = Tienda.objects.all()
     serializer_class = TiendaSerializer
-    permission_classes = [IsAuthenticated, IsAdminUser]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Si es admin, retorna totes les tiendas
+        if self.request.user.rol == 'admin':
+            return Tienda.objects.all()
+        # Si es usuari normal, retorna només les seves tiendas
+        return Tienda.objects.filter(propietario=self.request.user)
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated(), IsAdmin()]
+        return [IsAuthenticated()]
 
     def perform_create(self, serializer):
-        # Guardem la tienda amb l'usuari admin com a propietari
-        serializer.save(propietario=self.request.user)
+        # Guardem la tienda amb l'usuari especificat com a propietari
+        # Si no s'especifica propietari, s'assigna al admin que la crea
+        propietario = self.request.data.get('propietario', self.request.user.id)
+        serializer.save(propietario_id=propietario)
 
 class TiendaDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -249,3 +264,37 @@ class UsuarioDetailView(generics.RetrieveAPIView):
         if self.request.user.rol != 'admin' and obj != self.request.user:
             raise PermissionDenied("No tienes permiso para ver este perfil")
         return obj
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_stats(request):
+    """
+    Vista per obtenir les estadístiques d'un usuari.
+    Retorna:
+    - Número de tiendas
+    - Número de servicios activos
+    - Número de tickets pendientes
+    """
+    user = request.user
+    
+    # Si es admin, cuenta todas las tiendas, si no, solo las suyas
+    if user.rol == 'admin':
+        tiendas_count = Tienda.objects.count()
+        servicios_activos = TiendaServicio.objects.filter(estado='en_proceso').count()
+        tickets_pendientes = Soporte.objects.filter(estado='pendiente').count()
+    else:
+        tiendas_count = Tienda.objects.filter(propietario=user).count()
+        servicios_activos = TiendaServicio.objects.filter(
+            tienda__propietario=user,
+            estado='en_proceso'
+        ).count()
+        tickets_pendientes = Soporte.objects.filter(
+            usuario=user,
+            estado='pendiente'
+        ).count()
+    
+    return Response({
+        'tiendas': tiendas_count,
+        'servicios_activos': servicios_activos,
+        'tickets_pendientes': tickets_pendientes
+    })

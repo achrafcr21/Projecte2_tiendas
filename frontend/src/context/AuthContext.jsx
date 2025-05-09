@@ -8,10 +8,11 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar si hay un token almacenado
+    // Verificar si hay un token y datos de usuario almacenados
     const token = localStorage.getItem('token');
-    if (token) {
-      setUser({ token });
+    const userData = localStorage.getItem('userData');
+    if (token && userData) {
+      setUser({ ...JSON.parse(userData), token });
     }
     setLoading(false);
   }, []);
@@ -21,7 +22,15 @@ export const AuthProvider = ({ children }) => {
       const data = await apiLogin(credentials);
       if (data.token) {
         localStorage.setItem('token', data.token);
-        setUser({ token: data.token });
+        // Guardar datos completos del usuario
+        const userData = {
+          id: data.id,
+          username: data.username,
+          email: data.email,
+          rol: data.rol
+        };
+        localStorage.setItem('userData', JSON.stringify(userData));
+        setUser({ ...userData, token: data.token });
       }
       return data;
     } catch (error) {
@@ -41,6 +50,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('userData');
     setUser(null);
   };
 
@@ -50,11 +60,10 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
-    loading,
     login,
-    register,
     logout,
-    isAuthenticated: !!user
+    register,
+    isAuthenticated: !!user,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -67,3 +76,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export default AuthContext;

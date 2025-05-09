@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import Stores from './pages/Dashboard/Stores';
 import Services from './pages/Dashboard/Services';
 import Support from './pages/Dashboard/Support';
+import Settings from './pages/Dashboard/Settings';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
 import PrivateRoute from './components/PrivateRoute';
@@ -67,6 +68,18 @@ function App() {
                 <PrivateRoute>
                   <DashboardLayout>
                     <Support />
+                  </DashboardLayout>
+                </PrivateRoute>
+              }
+            />
+
+            {/* Ruta para configuración */}
+            <Route
+              path="/dashboard/configuracion"
+              element={
+                <PrivateRoute>
+                  <DashboardLayout>
+                    <Settings />
                   </DashboardLayout>
                 </PrivateRoute>
               }

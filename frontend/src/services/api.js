@@ -159,4 +159,29 @@ export const createOrder = async (orderData) => {
   }
 };
 
+// Usuarios
+export const getUsers = async () => {
+  try {
+    const response = await api.get('/usuarios/');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Error al obtener los usuarios');
+  }
+};
+
+// Estadísticas
+export const getUserStats = async () => {
+  try {
+    const response = await api.get('/usuarios/me/stats/');
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener estadísticas:', error);
+    return {
+      tiendas: 0,
+      servicios_activos: 0,
+      tickets_pendientes: 0
+    };
+  }
+};
+
 export default api;
